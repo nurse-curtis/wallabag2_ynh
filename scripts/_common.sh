@@ -5,7 +5,7 @@
 #=================================================
 
 # dependencies used by the app
-pkg_dependencies="php-cli php-mysql php-json php-gd php-tidy php-curl php-gettext php-redis"
+pkg_dependencies="php7.0-cli php7.0-mysql php7.0-json php7.0-gd php7.0-tidy php7.0-curl php-gettext php-redis"
 
 #=================================================
 # EXPERIMENTAL HELPERS
