@@ -6,8 +6,9 @@
 # IMPORT GENERIC HELPERS
 #=================================================
 
-source _common.sh
+source ./_common.sh
 source /usr/share/yunohost/helpers
+source ./experimental_helper.sh
 
 #=================================================
 # MANAGE SCRIPT FAILURE
@@ -40,14 +41,6 @@ test ! -e "$final_path" || ynh_die "This path already contains a folder"
 ynh_webpath_register --app=$app --domain=$domain --path_url=$path_url
 
 #=================================================
-# STORE SETTINGS FROM MANIFEST
-#=================================================
-
-ynh_app_setting_set --app=$app --key=domain --value=$domain
-ynh_app_setting_set --app=$app --key=path --value=$path_url
-ynh_app_setting_set --app=$app --key=admin --value=$admin
-
-#=================================================
 # STANDARD MODIFICATIONS
 #=================================================
 # INSTALL DEPENDENCIES
@@ -57,14 +50,26 @@ ynh_script_progression --message="Installing dependencies..." --weight=12
 ynh_install_app_dependencies $pkg_dependencies
 
 #=================================================
-# CREATE A MYSQL DATABASE
+# CREATE A PostgreSQL DATABASE
 #=================================================
-ynh_script_progression --message="Creating a MySQL database..."
+ynh_script_progression --message="Creating a PostSQL database..."
 
 db_name=$(ynh_sanitize_dbid $app)
 db_user=$db_name
 ynh_app_setting_set --app=$app --key=db_name --value=$db_name
-ynh_mysql_setup_db --db_user=$db_user --db_name=$db_name
+ynh_psql_test_if_first_run
+su --command="psql -c\"CREATE USER ${db_user} WITH PASSWORD '${db_pwd}' SUPERUSER CREATEDB CREATEROLE REPLICATION\"" postgres
+
+#=================================================
+# STORE SETTINGS FROM MANIFEST
+#=================================================
+
+ynh_app_setting_set $app domain "$domain"
+ynh_app_setting_set $app path "$path_url"
+ynh_app_setting_set $app admin "$admin"
+
+ynh_app_setting_set $app db_user "$db_user"
+ynh_app_setting_set $app db_pwd "$db_pwd"
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
@@ -75,7 +80,7 @@ ynh_script_progression --message="Setting up source files..." --weight=6
 ### downloaded from an upstream source, like a git repository.
 ### `ynh_setup_source` use the file conf/app.src
 
-ynh_app_setting_set --app=$app --key=final_path --value=$final_path
+ynh_app_setting_set $app final_path $final_path
 # Download, check integrity, uncompress and patch the source from app.src
 ynh_setup_source --dest_dir="$final_path"
 
